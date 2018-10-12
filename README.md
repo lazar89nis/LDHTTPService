@@ -1,8 +1,8 @@
-[![CocoaPods Compatible](https://img.shields.io/cocoapods/v/HCHTTPService.svg)](http://cocoapods.org/pods/HCHTTPService)
-[![License](https://img.shields.io/cocoapods/l/HCHTTPService.svg?style=flat)](http://cocoapods.org/pods/HCHTTPService)
-[![Platform](https://img.shields.io/cocoapods/p/HCHTTPService.svg?style=flat)](http://cocoapods.org/pods/HCHTTPService)
-![Swift](https://img.shields.io/badge/%20in-swift%203.1-orange.svg)
+[![CocoaPods Compatible](https://img.shields.io/cocoapods/v/LDHTTPService.svg)](http://cocoapods.org/pods/LDHTTPService)
+[![License](https://img.shields.io/cocoapods/l/LDHTTPService.svg?style=flat)](http://cocoapods.org/pods/LDHTTPService)
+[![Platform](https://img.shields.io/cocoapods/p/LDHTTPService.svg?style=flat)](http://cocoapods.org/pods/LDHTTPService)
+![Swift](https://img.shields.io/badge/%20in-swift%204.0-orange.svg)
 
-# HCHTTPService
+# LDHTTPService
 
-These are internal files we use in our company. We will not add new functions on request.
+This is internal library. I will not add new functions on request.
