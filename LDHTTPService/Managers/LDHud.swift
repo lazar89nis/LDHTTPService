@@ -1,0 +1,74 @@
+//
+//  LDHud.swift
+//
+//  Created by Lazar on 8/30/17.
+//  Copyright © 2017 Lazar. All rights reserved.
+//
+
+import UIKit
+import PKHUD
+
+/// LDHud class for handling showing and hiding loading huds.
+open class LDHud: NSObject, UIGestureRecognizerDelegate {
+    
+    // MARK: - Shared instance
+    
+    /// Shared (singleton) instance
+    open static let shared: LDHud = {
+        let instance = LDHud()
+        
+        // setup code
+        HUD.dimsBackground = false
+        HUD.allowsInteraction = false
+        
+        return instance
+    }()
+    
+    // MARK: - LDHud methods
+    
+    /// Showing hud inside defined view
+    ///
+    /// - Parameters:
+    ///   - type: Hud content type
+    ///   - hideOnTouch: Defines if hud should be hidden on touch. Default value is false.
+    ///   - insideView: UIView inside which hud will be presented and inside which it will be loading. Default is nil, and in that case Hud will be presented above all screen. By default, insideView is not set.
+    open static func showHUD(type: HUDContentType, hideOnTouch: Bool = false, insideView:UIView? = nil)
+    {
+        if let view = insideView
+        {
+            HUD.show(type, onView: view)
+        }
+        else
+        {
+            HUD.show(type)
+        }
+        
+        if hideOnTouch
+        {
+            let tap = UITapGestureRecognizer(target: self, action: #selector(self.hideHUD))
+            PKHUD.sharedHUD.contentView.addGestureRecognizer(tap)
+        }
+    }
+    
+    /// Method for flashing hud
+    ///
+    /// - Parameters:
+    ///   - type: Hud content type
+    ///   - stayOn: Time during which hud will be shown. Default value is 0.0.
+    ///   - hideOnTouch: Defines if hud should be hidden on touch. Default value is false.
+    open static func flashHUD(type: HUDContentType, stayOn: Double = 0.0, hideOnTouch: Bool = false)
+    {
+        HUD.flash(type, delay: stayOn)
+        if hideOnTouch
+        {
+            let tap = UITapGestureRecognizer(target: self, action: #selector(self.hideHUD))
+            PKHUD.sharedHUD.contentView.addGestureRecognizer(tap)
+        }
+    }
+    
+    /// Method for hiding hud
+    @objc open static func hideHUD()
+    {
+        HUD.hide(animated:true)
+    }
+}
