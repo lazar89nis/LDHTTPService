@@ -2,7 +2,7 @@ Pod::Spec.new do |s|
 
 s.platform = :ios
 s.name             = "LDHTTPService"
-s.version          = "1.0.0"
+s.version          = "1.0.1"
 s.summary          = "This is internal library."
 
 s.description      = <<-DESC
