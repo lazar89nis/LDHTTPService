@@ -14,7 +14,7 @@ open class LDHud: NSObject, UIGestureRecognizerDelegate {
     // MARK: - Shared instance
     
     /// Shared (singleton) instance
-    open static let shared: LDHud = {
+    public static let shared: LDHud = {
         let instance = LDHud()
         
         // setup code
@@ -32,7 +32,7 @@ open class LDHud: NSObject, UIGestureRecognizerDelegate {
     ///   - type: Hud content type
     ///   - hideOnTouch: Defines if hud should be hidden on touch. Default value is false.
     ///   - insideView: UIView inside which hud will be presented and inside which it will be loading. Default is nil, and in that case Hud will be presented above all screen. By default, insideView is not set.
-    open static func showHUD(type: HUDContentType, hideOnTouch: Bool = false, insideView:UIView? = nil)
+    public static func showHUD(type: HUDContentType, hideOnTouch: Bool = false, insideView:UIView? = nil)
     {
         if let view = insideView
         {
@@ -56,7 +56,7 @@ open class LDHud: NSObject, UIGestureRecognizerDelegate {
     ///   - type: Hud content type
     ///   - stayOn: Time during which hud will be shown. Default value is 0.0.
     ///   - hideOnTouch: Defines if hud should be hidden on touch. Default value is false.
-    open static func flashHUD(type: HUDContentType, stayOn: Double = 0.0, hideOnTouch: Bool = false)
+    public static func flashHUD(type: HUDContentType, stayOn: Double = 0.0, hideOnTouch: Bool = false)
     {
         HUD.flash(type, delay: stayOn)
         if hideOnTouch
@@ -67,7 +67,7 @@ open class LDHud: NSObject, UIGestureRecognizerDelegate {
     }
     
     /// Method for hiding hud
-    @objc open static func hideHUD()
+    @objc public static func hideHUD()
     {
         HUD.hide(animated:true)
     }

@@ -24,14 +24,14 @@ public class LDService: NSObject {
     open var token : String = ""
     open var reachability : Reachability! = nil
     
-    open static var mySessionMenager: SessionManager! = nil
-    open static var internetOn : Bool = true
+    public static var mySessionMenager: SessionManager! = nil
+    public static var internetOn : Bool = true
     
-    open static var timeoutIntervalRequest:TimeInterval = 30
-    open static var timeoutIntervalResource:TimeInterval = 30
-    open static var contentType = "application/json"
+    public static var timeoutIntervalRequest:TimeInterval = 30
+    public static var timeoutIntervalResource:TimeInterval = 30
+    public static var contentType = "application/json"
     
-    open static let shared: LDService = {
+    public static let shared: LDService = {
     
         let instance = LDService()
         

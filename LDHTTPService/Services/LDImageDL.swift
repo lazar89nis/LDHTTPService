@@ -27,7 +27,7 @@ public enum SDImageOptionType
 
 open class LDImageDL: NSObject {
     
-    open static let shared: LDImageDL = {
+    public static let shared: LDImageDL = {
         
         let instance = LDImageDL()
         

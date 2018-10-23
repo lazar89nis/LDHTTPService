@@ -11,7 +11,7 @@ import SwiftyJSON
 open class JSONParser {
 
     // MARK: - ERROR
-    open static func parseError(JSONData: Data?)
+    public static func parseError(JSONData: Data?)
     {
         do
         {
@@ -27,7 +27,7 @@ open class JSONParser {
         }
     }
     
-    open static func parseError(JSONString: String?)
+    public static func parseError(JSONString: String?)
     {
         if let dataFromString = JSONString!.data(using: .utf8, allowLossyConversion: false) {
             
@@ -44,5 +44,29 @@ open class JSONParser {
             
             print(json)
         }
+    }
+    
+    public static func getJSONFromData(_ JSONData: Data?) -> JSON {
+        let json:JSON = {
+            do {
+                if let jsonData = JSONData
+                {
+                    return try JSON(data: jsonData)
+                }
+                return JSON()
+            }
+            catch let error
+            {
+                print(error.localizedDescription)
+                return JSON()
+            }
+        }()
+        return json
+    }
+    
+    public static func printResponse(JSONData: Data?)
+    {
+        let json:JSON = getJSONFromData(JSONData)
+        print(json)
     }
 }
