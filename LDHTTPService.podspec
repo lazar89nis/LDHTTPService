@@ -2,7 +2,8 @@ Pod::Spec.new do |s|
 
 s.platform = :ios
 s.name             = "LDHTTPService"
-s.version          = "1.0.1"
+s.version          = "1.0.2"
+s.swift_versions = ['5.0']
 s.summary          = "This is internal library."
 
 s.description      = <<-DESC
@@ -14,7 +15,7 @@ s.license          = { :type => "MIT", :file => "LICENSE" }
 s.author           = { "Lazar" => "lazar89nis@gmail.com" }
 s.source           = { :git => "https://github.com/lazar89nis/LDHTTPService.git", :tag => "#{s.version}"}
 
-s.ios.deployment_target = "9.0"
+s.ios.deployment_target = "10.0"
 s.source_files = "LDHTTPService", "LDHTTPService/*", "LDHTTPService/**/*"
 
 s.dependency 'Alamofire'

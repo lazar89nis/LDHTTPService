@@ -48,8 +48,9 @@ open class LDImageDL: NSObject {
     {
         if showProgressIndicator
         {
-            imageView.sd_setShowActivityIndicatorView(true)
-            imageView.sd_setIndicatorStyle(.gray)
+            //imageView.sd_setShowActivityIndicatorView(true)
+            //imageView.sd_setIndicatorStyle(.gray)
+            imageView.sd_imageIndicator = SDWebImageActivityIndicator.gray
         }
         
         imageView.sd_setImage(with: URL(string: url), placeholderImage: UIImage(named: placeholder),options:makeOptionsArrayForImage(options),completed: {
@@ -76,7 +77,7 @@ open class LDImageDL: NSObject {
     ///   - completed: Function that runs when the image is downloaded. Default completion function is not set.
     open func downloadImageFromURL(url: String, options: [SDImageOptionType] = [], completed:((UIImage,Bool) -> Swift.Void)? = nil)
     {
-        let manager = SDWebImageManager.shared()
+        let manager = SDWebImageManager.shared
         manager.loadImage(with: URL(string: url),
                           options: makeOptionsArrayForImage(options),
                           progress: {
@@ -106,7 +107,7 @@ open class LDImageDL: NSObject {
     ///   - completed: Function that runs when the image is deleted. Default completion function is not set.
     open func removeImageFromCache(url: String, removeFromDisk: Bool = true, completed:(() -> Swift.Void)? = nil)
     {
-        let cache = SDImageCache.shared()
+        let cache = SDImageCache.shared
         cache.removeImage(forKey: url, fromDisk:removeFromDisk, withCompletion: {() in
             
             if completed != nil
@@ -121,7 +122,7 @@ open class LDImageDL: NSObject {
     /// - Parameter completed: Function that runs when all images are deleted. Default completion function is not set.
     open func removeAllImagesFromCache(completed:(() -> Swift.Void)? = nil)
     {
-        let cache = SDImageCache.shared()
+        let cache = SDImageCache.shared
         cache.clearDisk(onCompletion: {() in
             
             if completed != nil
@@ -151,9 +152,10 @@ open class LDImageDL: NSObject {
             case .LowPriority:
                 readyOptions.insert(SDWebImageOptions.lowPriority)
             case .CacheMemoryOnly:
-                readyOptions.insert(SDWebImageOptions.cacheMemoryOnly)
+                print("No option CacheMemoryOnly")
+                //readyOptions.insert(SDWebImageOptions.cacheMemoryOnly)
             case .ProgressiveDownload:
-                readyOptions.insert(SDWebImageOptions.progressiveDownload)
+                readyOptions.insert(SDWebImageOptions.progressiveLoad)
             case .RefreshCached:
                 readyOptions.insert(SDWebImageOptions.refreshCached)
             case .ContinueInBackground:

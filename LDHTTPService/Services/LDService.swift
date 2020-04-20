@@ -21,42 +21,37 @@ public enum ResponseType
 
 public class LDService: NSObject {
     
-    open var token : String = ""
     open var reachability : Reachability! = nil
     
-    public static var mySessionMenager: SessionManager! = nil
-    public static var internetOn : Bool = true
+    var mySessionManager: Session!
+    public var internetOn : Bool = true
     
-    public static var timeoutIntervalRequest:TimeInterval = 30
-    public static var timeoutIntervalResource:TimeInterval = 30
-    public static var contentType = "application/json"
-    
-    public static let shared: LDService = {
-    
-        let instance = LDService()
+    public init(timeoutIntervalRequest: Double = 30, timeoutIntervalResource: Double = 30, contentType: String = "application/json") {
+        super.init()
         
-        var defaultHeaders = Alamofire.SessionManager.defaultHTTPHeaders
+        var defaultHeaders = URLSessionConfiguration.default.headers
         defaultHeaders["Content-Type"] = contentType
         
         let configuration = URLSessionConfiguration.default
-        configuration.httpAdditionalHeaders = defaultHeaders
+        configuration.headers = defaultHeaders
         
         configuration.timeoutIntervalForRequest = timeoutIntervalRequest
         configuration.timeoutIntervalForResource = timeoutIntervalResource
         
-        mySessionMenager = Alamofire.SessionManager(configuration: configuration)
-    
+        mySessionManager = Alamofire.Session(configuration: configuration)
+        
         NetworkActivityIndicatorManager.shared.isEnabled = true
         
-        instance.setupReachability()
+        setupReachability()
         
-        return instance
-    }()
+    }
     
     /// Setup Reachability function
     open func setupReachability()
     {
-        reachability = Reachability()!
+        reachability = try! Reachability()
+        
+        internetOn = reachability.connection != .unavailable
         
         reachability.whenReachable = { reachability in
             DispatchQueue.main.async() {
@@ -65,14 +60,14 @@ public class LDService: NSObject {
                 } else {
                     print("Reachable via Cellular")
                 }
-                LDService.internetOn = true;
+                self.internetOn = true;
                 LDAppNotify.postNotification("internetOn")
             }
         }
         reachability.whenUnreachable = { reachability in
             DispatchQueue.main.async() {
                 print("Not reachable")
-                LDService.internetOn = false;
+                self.internetOn = false;
                 LDAppNotify.postNotification("internetOff")
             }
         }
@@ -91,37 +86,60 @@ public class LDService: NSObject {
     ///   - path: Path param is appended to URL
     ///   - methodType: HTTP Method. Can be .post, .get, .put...
     ///   - params: Parameters that you send as post values
-    ///   - header: Additional heders that are not included in session menager
+    ///   - header: Additional headers that are not included in session manager
     ///   - responseType: Select do you want JSON,Data or String response type. Default value is JSON type.
+    ///   - encoding: Select encoding type. Default is URLEncoding
+    ///   - sendUnauthorized: set true to post Unauthorized notification in case of unauthorized error
+    ///   - unauthorizedCode: HTTP status code for unauthorized error
     ///   - success: Success function
     ///   - failure: Failure function
-    open func requestWithURL(_ strURL: String, path: String, methodType: Alamofire.HTTPMethod, params: [String : AnyObject]?, header: [String : String]?, responseType:ResponseType = .TypeJSON, success:@escaping(Any) -> Void, failure:@escaping(Any?,Int) -> Void)
+    
+    open func requestWithURL(_ strURL: String, path: String, methodType: Alamofire.HTTPMethod, params: [String : AnyObject]?, header: [String : String]?, responseType:ResponseType = .TypeJSON, encoding: ParameterEncoding = URLEncoding.default, sendUnauthorized:Bool = true, unauthorizedCode:Int = 401, success:@escaping(Any) -> Void, failure:@escaping(Any?,Int) -> Void)
     {
-        LDService.mySessionMenager.request(strURL+path, method:methodType, parameters:params, headers:header)
-            .responseJSON { (responseObject) -> Void in
+        var targetUrl = strURL+path
+        targetUrl = targetUrl.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
+        
+        let url = NSURL(string: targetUrl)
+        
+        if url == nil {
+            failure(nil, -1)
+            return
+        }
+        let urlComponents = URLComponents(url: url! as URL, resolvingAgainstBaseURL: true)!
+                
+        mySessionManager.request(urlComponents as URLConvertible, method: methodType, parameters: params, encoding: encoding, headers: header == nil ? nil : HTTPHeaders(header!), interceptor: nil, requestModifier: nil)
+            .responseJSON { responseObject in
                 if responseType != .TypeJSON
                 {
                     return
                 }
-                if responseObject.response?.statusCode == 401
+                if responseObject.response?.statusCode == unauthorizedCode
                 {
-                    LDAppNotify.postNotification("Unauthorized")
+                    failure(responseObject.data as Any, unauthorizedCode)
+                    if sendUnauthorized
+                    {
+                        LDAppNotify.postNotification("Unauthorized")
+                    }
                     return
                 }
+
+                switch responseObject.result {
+                    case .success(_):
+                    if responseObject.response?.statusCode == 200 {
+                        success(responseObject.data as Any)
+                    }
+                    case let .failure(error):
+                        print(error.localizedDescription)
+                        failure(nil,0)
+                }
                 
-                if responseObject.result.isSuccess && responseObject.response?.statusCode == 200 {
-                    success(responseObject.data as Any)
-                } else if responseObject.result.isFailure {
-                    let error : Error = responseObject.result.error!
-                    print(error.localizedDescription)
-                    failure(nil,0)
-                } else if responseObject.response?.statusCode != 200 {
+                if responseObject.response?.statusCode != 200 {
                     let statusCode = responseObject.response?.statusCode
-                    
                     JSONParser.parseError(JSONData: responseObject.data)
-                    
                     failure(responseObject.data as Any, statusCode!)
                 }
+                
+
             } .responseString { (responseObject) -> Void in
                 if responseType != .TypeString
                 {
@@ -135,29 +153,33 @@ public class LDService: NSObject {
                 {
                     return
                 }
-                if responseObject.response?.statusCode == 401
+                if responseObject.response?.statusCode == unauthorizedCode
                 {
-                    LDAppNotify.postNotification("Unauthorized")
+                    failure(responseObject.data as Any, unauthorizedCode)
+                    if sendUnauthorized
+                    {
+                        LDAppNotify.postNotification("Unauthorized")
+                    }
                     return
                 }
                 
-                if responseObject.result.isSuccess && responseObject.response?.statusCode == 200 {
-                    success(responseObject.data as Any)
-                } else if responseObject.result.isFailure {
-                    let error : Error = responseObject.result.error!
-                    print(error.localizedDescription)
-                    failure(nil,0)
-                } else if responseObject.response?.statusCode != 200 {
-                    let statusCode = responseObject.response?.statusCode
-                    
-                    JSONParser.parseError(JSONData: responseObject.data)
-                    
-                    failure(responseObject.data as Any, statusCode!)
+                switch responseObject.result {
+                    case .success(_):
+                        if responseObject.response?.statusCode == 200 {
+                            success(responseObject.data as Any)
+                    }
+                    case let .failure(error):
+                        print(error.localizedDescription)
+                        failure(nil,0)
                 }
                 
-            } /*.response { (responseObject) -> Void in
-                print("response")
-        }*/
+                if responseObject.response?.statusCode != 200 {
+                    let statusCode = responseObject.response?.statusCode
+                    JSONParser.parseError(JSONData: responseObject.data)
+                    failure(responseObject.data as Any, statusCode!)
+                }
+
+            }
     }
     
     /// Function to upload multiple images to server.
@@ -168,22 +190,26 @@ public class LDService: NSObject {
     ///   - images: Array of images where key is param name and value is UIImage. Images are sent to server as JPEG Or PNG
     ///   - videos: Array of videos where key is param name and value is Video URL. Images are sent to server as MP4
     ///   - params: Parameters that you send as post values
-    ///   - header: Additional heders that are not included in session menager
+    ///   - header: Additional headers that are not included in session manager
+    ///   - JPEGcompression: quality for JPEG image
+    ///   - sendAsPNG: send image as PNG
+    ///   - sendUnauthorized: set true to post Unauthorized notification in case of unauthorized error
+    ///   - unauthorizedCode: HTTP status code for unauthorized error
     ///   - success: Success function
     ///   - failure: Failure function
-    open func mediaUploadWithURL(_ strURL: String, path: String, images:[String : UIImage] = [:], videos:[String : URL] = [:], params: [String : String]?, header: [String : String]?, JPEGcompression: CGFloat = 0.7, sendAsPNG: Bool = false, success:@escaping(Any) -> Void, failure:@escaping (Any?,Int) -> Void)
+    open func mediaUploadWithURL(_ strURL: String, path: String, images:[String : UIImage] = [:], videos:[String : URL] = [:], params: [String : String]?, header: [String : String]?, JPEGcompression: CGFloat = 0.7, sendAsPNG: Bool = false, sendUnauthorized:Bool = true, unauthorizedCode:Int = 401, success:@escaping(Any) -> Void, failure:@escaping (Any?,Int) -> Void)
     {
-        let request = try! URLRequest(url:strURL+path, method: .post, headers:header)
-        
-        Alamofire.upload(multipartFormData: { (multipartFormData) in
+        let request = try! URLRequest(url:strURL+path, method: .post, headers:header == nil ? nil : HTTPHeaders(header!))
+         
+        mySessionManager.upload(multipartFormData: { (multipartFormData) in
             
             for image in images {
                 if sendAsPNG
                 {
-                    let fileData = UIImagePNGRepresentation(image.value)!
+                    let fileData = image.value.pngData()!
                     multipartFormData.append(fileData, withName: image.key, fileName: "name", mimeType: "image/png")
                 } else {
-                    let fileData = UIImageJPEGRepresentation(image.value, JPEGcompression)!
+                    let fileData = image.value.jpegData(compressionQuality: JPEGcompression)!
                     multipartFormData.append(fileData, withName: image.key, fileName: "name", mimeType: "image/jpeg")
                 }
             }
@@ -197,29 +223,36 @@ public class LDService: NSObject {
             for (key, value) in params! {
                 multipartFormData.append(value.data(using: String.Encoding.utf8)!, withName: key)
             }
-        }, with: request, encodingCompletion: { (result) in
+        }, with: request as URLRequestConvertible).responseJSON(completionHandler: { responseObject in
             
-            switch result {
-            case .success(let upload, _, _):
-                upload.responseJSON { response in
-                    
-                    if response.result.isFailure
-                    {
-                        let error : Error = response.result.error!
-                        print(error.localizedDescription)
-                        failure(nil,0)
-                    } else if response.response?.statusCode == 200
-                    {
-                        success(response.data as Any)
-                    } else {
-                        let statusCode = response.response?.statusCode
-                        failure(response.data,statusCode!)
-                    }
+            if responseObject.response?.statusCode == unauthorizedCode
+            {
+                failure(responseObject.data as Any, unauthorizedCode)
+                if sendUnauthorized
+                {
+                    LDAppNotify.postNotification("Unauthorized")
                 }
-            case .failure( _):
-                failure(nil,0)
+                return
             }
             
+            switch responseObject.result {
+                case .success(_):
+                    if responseObject.response?.statusCode == 200 {
+                        success(responseObject.data as Any)
+                }
+                case let .failure(error):
+                    print(error.localizedDescription)
+                    failure(nil,0)
+            }
+            
+            if responseObject.response?.statusCode != 200 {
+                let statusCode = responseObject.response?.statusCode
+                JSONParser.parseError(JSONData: responseObject.data)
+                failure(responseObject.data as Any, statusCode!)
+            }
+            
+        }).uploadProgress(queue: .main, closure: { progress in
+            print("Upload Progress: \(progress.fractionCompleted)")
         })
     }
 }
